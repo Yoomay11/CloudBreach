@@ -1,0 +1,58 @@
+# 不安全的Pod配置示例
+apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-pod
+  labels:
+    app: insecure-app
+spec:
+  hostNetwork: true  # 使用主机网络
+  containers:
+  - name: insecure-container
+    image: nginx:latest
+    securityContext:
+      runAsUser: 0  # 以root用户运行
+      privileged: true  # 特权模式
+      capabilities:
+        add:
+        - SYS_ADMIN  # 危险的capability
+        - NET_ADMIN
+    # 缺少资源限制
+    ports:
+    - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: insecure-app
+  template:
+    metadata:
+      labels:
+        app: insecure-app
+    spec:
+      containers:
+      - name: app-container
+        image: ubuntu:latest
+        command: ["/bin/bash"]
+        args: ["-c", "while true; do sleep 30; done;"]
+        securityContext:
+          runAsUser: 0  # 以root用户运行
+        # 缺少资源限制
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: insecure-service
+spec:
+  selector:
+    app: insecure-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer

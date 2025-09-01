@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: cloudsecops
+  labels:
+    app: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: cloudsecops/backend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: GO_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: GO_ENV
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloudsecops-secrets
+              key: DB_PASSWORD
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: REDIS_PORT
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloudsecops-secrets
+              key: REDIS_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cloudsecops-secrets
+              key: JWT_SECRET
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: cloudsecops-config
+              key: AWS_REGION
+        - name: AZURE_SUBSCRIPTION_ID
+          valueFrom:
+            secretKeyRef:
+              name: cloudsecops-secrets
+              key: AZURE_SUBSCRIPTION_ID
+        volumeMounts:
+        - name: test-configs
+          mountPath: /root/test-configs
+          readOnly: true
+        - name: logs
+          mountPath: /var/log/cloudsecops
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: test-configs
+        configMap:
+          name: test-configs
+      - name: logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: cloudsecops
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-configs
+  namespace: cloudsecops
+data:
+  terraform-example.tf: |
+    # Terraform配置示例
+    resource "aws_s3_bucket" "example" {
+      bucket = "my-example-bucket"
+    }
+    
+    resource "aws_s3_bucket_public_access_block" "example" {
+      bucket = aws_s3_bucket.example.id
+      
+      block_public_acls       = false  # 安全风险：允许公共ACL
+      block_public_policy     = false  # 安全风险：允许公共策略
+      ignore_public_acls      = false
+      restrict_public_buckets = false
+    }
+  
+  cloudformation-example.yaml: |
+    # CloudFormation配置示例
+    AWSTemplateFormatVersion: '2010-09-09'
+    Resources:
+      MyS3Bucket:
+        Type: AWS::S3::Bucket
+        Properties:
+          BucketName: my-example-bucket
+          PublicReadPolicy: Allow  # 安全风险：允许公共读取

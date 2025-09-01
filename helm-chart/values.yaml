@@ -1,0 +1,211 @@
+# 全局配置
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# 后端配置
+backend:
+  enabled: true
+  replicaCount: 3
+  
+  image:
+    repository: cloudsecops/backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  
+  livenessProbe:
+    httpGet:
+      path: /api/v1/health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    httpGet:
+      path: /api/v1/health
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  
+  env:
+    GO_ENV: "production"
+    AWS_REGION: "us-west-2"
+  
+  secrets:
+    JWT_SECRET: "your-super-secret-jwt-key-change-in-production"
+    AZURE_SUBSCRIPTION_ID: "your-azure-subscription-id"
+
+# 前端配置
+frontend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: cloudsecops/frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: LoadBalancer
+    port: 3000
+    targetPort: 3000
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# PostgreSQL配置
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres123"
+    username: "postgres"
+    password: "postgres123"
+    database: "cloudsecops"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+  
+  metrics:
+    enabled: false
+
+# Redis配置
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: "redis123"
+  
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+    
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+  
+  replica:
+    replicaCount: 1
+  
+  metrics:
+    enabled: false
+
+# Ingress配置
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  
+  hosts:
+    - host: cloudsecops.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+  
+  tls:
+    - secretName: cloudsecops-tls
+      hosts:
+        - cloudsecops.example.com
+
+# 监控配置
+monitoring:
+  prometheus:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+  
+  grafana:
+    enabled: false
+
+# 安全配置
+security:
+  podSecurityPolicy:
+    enabled: false
+  
+  networkPolicy:
+    enabled: false
+  
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+# 持久化存储
+persistence:
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  
+  backend:
+    logs:
+      enabled: true
+      size: 5Gi
+  
+  testConfigs:
+    enabled: true
+    size: 1Gi
+
+# 节点选择器和容忍度
+nodeSelector: {}
+tolerations: []
+affinity: {}

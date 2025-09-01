@@ -1,0 +1,49 @@
+apiVersion: v2
+name: cloudsecops
+description: A comprehensive cloud security operations platform with IaC scanning, runtime monitoring, and attack chain analysis
+
+# Chart版本
+version: 0.1.0
+
+# 应用版本
+appVersion: "1.0.0"
+
+# Chart类型
+type: application
+
+# 关键词
+keywords:
+  - security
+  - cloud
+  - iac
+  - monitoring
+  - devops
+  - kubernetes
+
+# 维护者信息
+maintainers:
+  - name: CloudSecOps Team
+    email: team@cloudsecops.com
+
+# 项目主页
+home: https://github.com/cloudsecops/cloudsecops
+
+# 源码仓库
+sources:
+  - https://github.com/cloudsecops/cloudsecops
+
+# 依赖
+dependencies:
+  - name: postgresql
+    version: "12.1.9"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.3.7"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+
+# 注解
+annotations:
+  category: Security
+  licenses: Apache-2.0

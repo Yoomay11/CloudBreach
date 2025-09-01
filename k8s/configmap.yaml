@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudsecops-config
+  namespace: cloudsecops
+data:
+  GO_ENV: "production"
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "cloudsecops"
+  DB_USER: "postgres"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  AWS_REGION: "us-west-2"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudsecops-secrets
+  namespace: cloudsecops
+type: Opaque
+data:
+  DB_PASSWORD: cG9zdGdyZXMxMjM=  # postgres123 base64编码
+  JWT_SECRET: eW91ci1zdXBlci1zZWNyZXQtand0LWtleS1jaGFuZ2UtaW4tcHJvZHVjdGlvbg==  # JWT密钥 base64编码
+  REDIS_PASSWORD: cmVkaXMxMjM=  # redis123 base64编码
+  AZURE_SUBSCRIPTION_ID: eW91ci1henVyZS1zdWJzY3JpcHRpb24taWQ=  # Azure订阅ID base64编码
